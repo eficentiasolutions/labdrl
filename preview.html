@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI VetLab — Gestión de muestras veterinarias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+/* ─── VARIABLES ─── */
+:root {
+  --blue:      #0256c5;
+  --blue-dark: #014092;
+  --blue-light:#036cf7;
+  --ink:       #141C26;
+  --ink-soft:  #263547;
+  --text:      #686A6E;
+  --white:     #ffffff;
+  --off-white: #f5f5f5;
+  --border:    #e2e6ea;
+  --font:      'Mulish', sans-serif;
+  --radius:    2px;
+  --shadow:    0 4px 24px rgba(2,86,197,.10);
+  --shadow-md: 0 8px 40px rgba(2,86,197,.14);
+}
+
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body { font-family: var(--font); color: var(--ink); background: var(--white); overflow-x: hidden; line-height: 1.6; }
+img { display: block; max-width: 100%; height: auto; }
+a { text-decoration: none; }
+ul { list-style: none; }
+
+/* ─── HEADER / NAV ─── */
+#site-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  transition: box-shadow .2s;
+}
+#site-header.scrolled { box-shadow: 0 2px 16px rgba(0,0,0,.08); }
+
+.nav-wrap {
+  max-width: 1140px; margin: 0 auto;
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+
+.nav-logo {
+  font-weight: 800; font-size: 1.25rem;
+  color: var(--ink); letter-spacing: -.3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.nav-logo-dot { width: 9px; height: 9px; background: var(--blue); border-radius: 50%; display: inline-block; }
+.nav-logo:hover { color: var(--blue); }
+
+.nav-email {
+  font-size: .75rem; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-email svg { width: 16px; height: 16px; fill: var(--text); }
+.nav-email:hover { color: var(--blue); }
+.nav-email:hover svg { fill: var(--blue); }
+
+.nav-right { display: flex; align-items: center; gap: 24px; }
+
+.main-navigation { display: flex; }
+.main-navigation ul { display: flex; align-items: center; gap: 0; }
+.main-navigation ul li a {
+  font-size: .7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text); padding: 8px 14px; display: block;
+  transition: color .15s; position: relative;
+}
+.main-navigation ul li a::after {
+  content: ''; position: absolute; bottom: 4px; left: 14px; right: 14px;
+  height: 2px; background: var(--blue);
+  transform: scaleX(0); transform-origin: left; transition: transform .2s;
+}
+.main-navigation ul li a:hover { color: var(--blue); }
+.main-navigation ul li a:hover::after { transform: scaleX(1); }
+.main-navigation ul li.menu-item-cta a {
+  border: 2px solid var(--blue); color: var(--blue);
+  border-radius: var(--radius); padding: 6px 18px; margin-left: 8px;
+  transition: background .15s, color .15s;
+}
+.main-navigation ul li.menu-item-cta a:hover { background: var(--blue); color: var(--white); }
+.main-navigation ul li.menu-item-cta a::after { display: none; }
+
+.menu-toggle {
+  display: none; flex-direction: column; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 4px;
+}
+.menu-toggle span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: .2s; }
+
+.mobile-nav {
+  display: none; position: fixed;
+  inset: 68px 0 0 0;
+  background: var(--white); z-index: 999;
+  padding: 2rem 1.5rem;
+  flex-direction: column; gap: 1rem;
+  border-top: 1px solid var(--border);
+}
+.mobile-nav.open { display: flex; }
+.mobile-nav a {
+  font-size: 1.1rem; font-weight: 700; color: var(--ink);
+  padding: .6rem 0; border-bottom: 1px solid var(--border); display: block;
+}
+.mobile-nav a:hover { color: var(--blue); }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font); font-size: .95rem; font-weight: 700;
+  padding: 13px 28px; border-radius: var(--radius);
+  cursor: pointer; transition: all .18s; border: 2px solid transparent; line-height: 1;
+}
+.btn-blue { background: var(--blue); color: var(--white); border-color: var(--blue); }
+.btn-blue:hover { background: var(--blue-light); border-color: var(--blue-light); color: var(--white); }
+.btn-ghost { background: transparent; color: var(--white); border-color: rgba(255,255,255,.4); }
+.btn-ghost:hover { border-color: var(--white); color: var(--white); }
+
+/* ─── SECTIONS ─── */
+.section { padding: 90px 20px; }
+.section-inner { max-width: 1140px; margin: 0 auto; }
+.section-alt { background: var(--off-white); }
+.section-dark { background: var(--ink); }
+
+.section-label {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: .68rem; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--blue); margin-bottom: 1rem;
+}
+.section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--blue); }
+.section-label-white { color: rgba(255,255,255,.6); }
+.section-label-white::before { background: rgba(255,255,255,.4); }
+
+.section-title {
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem); font-weight: 700;
+  line-height: 1.15; color: var(--ink); margin-bottom: .6rem;
+}
+.section-title-blue { color: var(--blue); }
+.section-title-white { color: #fff; }
+.section-subtitle { font-size: 1.2rem; font-weight: 500; color: var(--ink); margin-bottom: 1rem; }
+.section-text { font-size: 1rem; font-weight: 400; color: var(--text); line-height: 1.7; }
+
+/* ─── HERO ─── */
+.hero-section {
+  min-height: 80vh;
+  background: var(--ink);
+  background-image: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.45));
+  background-size: cover; background-position: center;
+  display: flex; align-items: center;
+  padding: 120px 20px 80px;
+}
+.hero-inner { max-width: 1140px; margin: 0 auto; width: 100%; }
+.hero-label {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: .7rem; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: rgba(255,255,255,.7); margin-bottom: 1.25rem;
+}
+.hero-label::before { content: ''; display: block; width: 28px; height: 1px; background: rgba(255,255,255,.5); }
+.hero-title {
+  font-size: clamp(2.6rem, 5.5vw, 4.5rem); font-weight: 700;
+  line-height: 1.05; color: #fff; max-width: 700px; margin-bottom: 1.25rem;
+}
+.hero-sub {
+  font-size: 1.2rem; font-weight: 400;
+  color: rgba(255,255,255,.75); max-width: 500px; margin-bottom: 2.5rem; line-height: 1.5;
+}
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* ─── ABOUT ─── */
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.about-img-wrap { position: relative; }
+.about-img-wrap img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 4px; box-shadow: var(--shadow-md); }
+.about-img-badge {
+  position: absolute; bottom: -18px; right: -18px;
+  background: var(--blue); color: var(--white);
+  padding: 18px 22px; border-radius: 4px; box-shadow: var(--shadow-md); text-align: center;
+}
+.about-img-badge .num { font-size: 2rem; font-weight: 800; display: block; line-height: 1; }
+.about-img-badge .lbl { font-size: .7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: .85; margin-top: 4px; }
+.about-content { padding-left: 10px; }
+.about-content p { margin-bottom: 1.1rem; }
+.about-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.75rem; }
+.pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: #e8f0fc; color: var(--blue);
+  font-size: .8rem; font-weight: 700; padding: 7px 14px; border-radius: 100px;
+}
+.pill svg { width: 14px; height: 14px; fill: var(--blue); flex-shrink: 0; }
+.about-cta { margin-top: 2rem; }
+
+/* ─── SERVICES ─── */
+.services-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem; gap: 2rem; flex-wrap: wrap; }
+.services-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 2px; background: var(--border);
+  border: 2px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+.svc-card { background: var(--white); padding: 0 0 2rem; transition: transform .2s; display: flex; flex-direction: column; }
+.svc-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); z-index: 1; position: relative; }
+.svc-img { width: 100%; height: 200px; object-fit: cover; display: block; filter: saturate(.85); transition: filter .3s; }
+.svc-card:hover .svc-img { filter: saturate(1); }
+.svc-body { padding: 1.75rem 1.75rem 0; flex: 1; }
+.svc-num { font-size: .65rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--blue); margin-bottom: .6rem; display: block; }
+.svc-title { font-size: 1.2rem; font-weight: 700; color: var(--ink); margin-bottom: .6rem; line-height: 1.3; }
+.svc-desc { font-size: .9rem; color: var(--text); line-height: 1.65; font-weight: 400; }
+.svc-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .85rem; font-weight: 700; color: var(--blue);
+  margin: 1.25rem 1.75rem 0; transition: gap .18s;
+}
+.svc-link:hover { gap: 10px; color: var(--blue); }
+.svc-link svg { width: 14px; height: 14px; fill: var(--blue); }
+
+/* ─── PROCESS ─── */
+.process-header { margin-bottom: 3.5rem; }
+.process-steps {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 2px; background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 6px; overflow: hidden;
+}
+.step { padding: 2rem 1.5rem; border-right: 1px solid rgba(255,255,255,.07); transition: background .25s; }
+.step:last-child { border-right: none; }
+.step:hover { background: rgba(255,255,255,.04); }
+.step-img { width: 100%; height: 130px; object-fit: cover; border-radius: 3px; margin-bottom: 1.5rem; filter: brightness(.75) saturate(.7); transition: filter .3s; }
+.step:hover .step-img { filter: brightness(.9) saturate(1); }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid rgba(3,108,247,.5);
+  font-size: .7rem; font-weight: 700; color: #6eb0ff; margin-bottom: 1rem;
+}
+.step-title { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: .5rem; line-height: 1.3; }
+.step-desc { font-size: .82rem; color: rgba(255,255,255,.5); line-height: 1.65; font-weight: 400; }
+
+/* ─── CONTACT ─── */
+.contact-grid { display: grid; grid-template-columns: 5fr 6fr; gap: 60px; align-items: start; }
+.contact-info-title { font-size: 1.6rem; font-weight: 700; color: var(--blue); margin-bottom: .4rem; }
+.contact-info-sub { font-size: 1rem; font-weight: 500; color: var(--ink); margin-bottom: 2rem; }
+.cinfo-row { margin-bottom: 1.6rem; }
+.cinfo-label { font-size: .65rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); margin-bottom: .3rem; }
+.cinfo-value { font-size: .95rem; color: var(--ink); font-weight: 500; }
+.cinfo-value a { color: var(--ink); }
+.cinfo-value a:hover { color: var(--blue); }
+.hours-table { width: 100%; border-collapse: collapse; margin-top: .4rem; }
+.hours-table td { font-size: .88rem; padding: 3px 0; color: var(--text); }
+.hours-table td:first-child { font-weight: 600; color: var(--ink); width: 100px; }
+
+.form-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 2.5rem; box-shadow: var(--shadow); }
+.form-card label { display: block; font-size: .78rem; font-weight: 600; color: var(--ink); margin-bottom: .35rem; }
+.form-card input[type="text"],
+.form-card input[type="email"],
+.form-card input[type="tel"],
+.form-card textarea {
+  width: 100%; font-family: var(--font); font-size: .95rem; font-weight: 400;
+  color: var(--ink); background: var(--white);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; outline: none;
+  transition: border-color .18s, box-shadow .18s;
+}
+.form-card input:focus, .form-card textarea:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 3px rgba(2,86,197,.12);
+}
+.form-card textarea { resize: vertical; min-height: 90px; }
+.form-card input[type="submit"] {
+  width: 100%; background: var(--blue); color: var(--white);
+  border: 2px solid var(--blue); font-family: var(--font);
+  font-size: .9rem; font-weight: 700; padding: 13px;
+  border-radius: var(--radius); cursor: pointer;
+  letter-spacing: .5px; text-transform: uppercase;
+  transition: background .18s, border-color .18s; margin-top: .5rem;
+}
+.form-card input[type="submit"]:hover { background: var(--blue-light); border-color: var(--blue-light); }
+
+/* ─── FOOTER ─── */
+#site-footer { background: var(--blue); padding: 48px 20px; }
+.footer-inner { max-width: 1140px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
+.footer-logo { font-weight: 800; font-size: 1.2rem; color: #fff; }
+.footer-logo:hover { color: rgba(255,255,255,.8); }
+.footer-nav { display: flex; gap: 2rem; }
+.footer-nav a { font-size: .7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.65); transition: color .15s; }
+.footer-nav a:hover { color: #fff; }
+.footer-copy { font-size: .78rem; color: rgba(255,255,255,.5); }
+
+/* ─── REVEAL ANIMATION ─── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .65s ease, transform .65s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ─── RESPONSIVE ─── */
+@media(max-width: 960px) {
+  .main-navigation { display: none; }
+  .menu-toggle { display: flex; }
+  .nav-email span { display: none; }
+  .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+  .about-img-badge { right: 10px; bottom: -14px; }
+  .services-grid { grid-template-columns: 1fr; }
+  .process-steps { grid-template-columns: 1fr 1fr; }
+  .contact-grid { grid-template-columns: 1fr; }
+}
+@media(max-width: 600px) {
+  .process-steps { grid-template-columns: 1fr; }
+  .hero-title { font-size: 2.2rem; }
+  .footer-inner { flex-direction: column; text-align: center; }
+  .footer-nav { justify-content: center; }
+  .hero-btns { flex-direction: column; }
+  .services-header { flex-direction: column; align-items: flex-start; }
+  .about-img-wrap { padding-bottom: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header id="site-header">
+  <div class="nav-wrap">
+    <a href="#inicio" class="nav-logo">
+      <span class="nav-logo-dot"></span>
+      AI VetLab
+    </a>
+    <div class="nav-right">
+      <a href="mailto:info@aivetlab.es" class="nav-email">
+        <svg viewBox="0 0 27 21" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24.009 0H2.99C1.341 0 0 1.322 0 2.946v15.108C0 19.679 1.342 21 2.991 21h21.018C25.659 21 27 19.679 27 18.054V2.946C27 1.321 25.658 0 24.009 0zM2.99 1.416h21.018c.16 0 .32.025.474.075l-9.91 9.99a1.502 1.502 0 01-1.073.448c-.406 0-.787-.16-1.073-.447L2.517 1.49c.153-.05.313-.075.474-.075zM1.438 18.054V2.946c0-.151.023-.302.069-.447l8.005 8.07-7.969 8.035a1.495 1.495 0 01-.105-.55zm22.57 1.53H2.992a1.58 1.58 0 01-.366-.044l7.892-7.957.88.888a2.94 2.94 0 002.103.874 2.94 2.94 0 002.103-.874l.88-.888 7.892 7.957a1.545 1.545 0 01-.366.044zm1.554-1.53c0 .189-.036.375-.106.55l-7.968-8.034 8.006-8.071c.045.145.068.295.068.447v15.108z"/>
+        </svg>
+        <span>info@aivetlab.es</span>
+      </a>
+      <nav class="main-navigation" role="navigation">
+        <ul>
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#acerca">Acerca de</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#proceso">Proceso</a></li>
+          <li class="menu-item-cta"><a href="#contacto">Contacto</a></li>
+        </ul>
+      </nav>
+      <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="mobile-nav" id="mobile-nav" aria-label="Menú móvil">
+  <a href="#inicio">Inicio</a>
+  <a href="#acerca">Acerca de</a>
+  <a href="#servicios">Servicios</a>
+  <a href="#proceso">Proceso</a>
+  <a href="#contacto">Contacto</a>
+</nav>
+
+<main id="main-content">
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero-section" id="inicio">
+  <div class="hero-inner">
+    <div class="hero-label">Laboratorio veterinario · Inteligencia Artificial</div>
+    <h1 class="hero-title">Gestión de muestras veterinarias</h1>
+    <p class="hero-sub">Rápido, eficaz y económico. Sin necesidad de visita al veterinario.</p>
+    <div class="hero-btns">
+      <a href="#servicios" class="btn btn-blue">Ver servicios</a>
+      <a href="#contacto" class="btn btn-ghost">Contactar</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ ABOUT ═══════════ -->
+<section class="section" id="acerca">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="about-img-wrap reveal">
+        <img src="https://cdn.b12.io/client_media/ozkqzIVU/123bd902-0521-11f1-b1eb-0242ac110002-jpg-hero_image.jpeg" alt="Veterinaria">
+        <div class="about-img-badge">
+          <span class="num">4</span>
+          <span class="lbl">Pasos simples</span>
+        </div>
+      </div>
+      <div class="about-content reveal">
+        <div class="section-label">Acerca de nosotros</div>
+        <h2 class="section-title section-title-blue">Innovación en análisis veterinarios</h2>
+        <p class="section-subtitle">Gestión eficiente de muestras</p>
+        <p class="section-text">En AI VetLab, transformamos la forma en que se gestionan las muestras biológicas de tus animales de compañía. Con un enfoque en la rapidez y la eficacia, ofrecemos un servicio que no requiere la intervención directa de un veterinario.</p>
+        <p class="section-text" style="margin-top:.9rem">Nuestro sistema permite la recepción, gestión y envío de muestras como sangre y orina a laboratorios concertados, facilitando el acceso a análisis diagnósticos. Además, proporcionamos interpretación de resultados mediante inteligencia artificial.</p>
+        <div class="about-pills">
+          <span class="pill">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+            Análisis precisos
+          </span>
+          <span class="pill">
+            <svg viewBox="0 0 24 24"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5V2.05z"/></svg>
+            Resultados rápidos
+          </span>
+          <span class="pill">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            Interpretación con IA
+          </span>
+          <span class="pill">
+            <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+            Económico
+          </span>
+        </div>
+        <div class="about-cta">
+          <a href="#contacto" class="btn btn-blue">Hablar con nosotros</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SERVICIOS ═══════════ -->
+<section class="section section-alt" id="servicios">
+  <div class="section-inner">
+    <div class="services-header">
+      <div>
+        <div class="section-label">Nuestros servicios</div>
+        <h2 class="section-title section-title-blue">Análisis rápidos</h2>
+        <p class="section-text">Acceso fácil y efectivo a diagnósticos veterinarios</p>
+      </div>
+    </div>
+    <div class="services-grid">
+      <div class="svc-card reveal">
+        <img class="svc-img" src="https://cdn.b12.io/client_media/ozkqzIVU/14646c64-0521-11f1-8381-0242ac110002-jpg-regular_image.jpeg" alt="Recepción de muestras biológicas">
+        <div class="svc-body">
+          <span class="svc-num">01 — Servicio</span>
+          <div class="svc-title">Recepción de muestras biológicas</div>
+          <p class="svc-desc">Gestión eficiente de muestras de sangre y orina con el máximo cuidado y en condiciones óptimas.</p>
+        </div>
+        <a href="#contacto" class="svc-link">
+          Saber más
+          <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </a>
+      </div>
+      <div class="svc-card reveal">
+        <img class="svc-img" src="https://cdn.b12.io/client_media/ozkqzIVU/142bd9e5-0521-11f1-a4ca-0242ac110002-jpg-regular_image.jpeg" alt="Envío de muestras a laboratorios">
+        <div class="svc-body">
+          <span class="svc-num">02 — Servicio</span>
+          <div class="svc-title">Envío de muestras a laboratorios</div>
+          <p class="svc-desc">Transporte seguro y confiable de muestras a nuestros laboratorios concertados. Cadena de custodia garantizada.</p>
+        </div>
+        <a href="#contacto" class="svc-link">
+          Saber más
+          <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </a>
+      </div>
+      <div class="svc-card reveal">
+        <img class="svc-img" src="https://cdn.b12.io/client_media/ozkqzIVU/144ccafe-0521-11f1-9ee7-0242ac110002-jpg-regular_image.jpeg" alt="Interpretación de resultados con IA">
+        <div class="svc-body">
+          <span class="svc-num">03 — Servicio</span>
+          <div class="svc-title">Interpretación de resultados con IA</div>
+          <p class="svc-desc">Comprende los informes de análisis diagnósticos de forma clara y precisa gracias a nuestra tecnología de inteligencia artificial.</p>
+        </div>
+        <a href="#contacto" class="svc-link">
+          Saber más
+          <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PROCESO ═══════════ -->
+<section class="section section-dark" id="proceso">
+  <div class="section-inner">
+    <div class="process-header">
+      <div class="section-label section-label-white">Cómo funciona</div>
+      <h2 class="section-title section-title-white">Proceso sencillo</h2>
+      <p style="font-size:1rem;color:rgba(255,255,255,.5);font-weight:400">Análisis de muestras en 4 pasos</p>
+    </div>
+    <div class="process-steps">
+      <div class="step reveal">
+        <img class="step-img" src="https://cdn.b12.io/client_media/ozkqzIVU/150f5b89-0521-11f1-b60f-0242ac110002-jpg-regular_image.jpeg" alt="Recepción de muestras">
+        <div class="step-num">01</div>
+        <div class="step-title">Recepción de muestras</div>
+        <p class="step-desc">Los dueños traen las muestras biológicas a nuestras instalaciones en Almoradí. Recepción rápida y profesional.</p>
+      </div>
+      <div class="step reveal">
+        <img class="step-img" src="https://cdn.b12.io/client_media/ozkqzIVU/14d772a8-0521-11f1-be71-0242ac110002-jpg-regular_image.jpeg" alt="Gestión de muestras">
+        <div class="step-num">02</div>
+        <div class="step-title">Gestión de muestras</div>
+        <p class="step-desc">Etiquetado, documentación y preparación para envío. Sistema rastreable con cadena de custodia garantizada.</p>
+      </div>
+      <div class="step reveal">
+        <img class="step-img" src="https://cdn.b12.io/client_media/ozkqzIVU/14fabdcd-0521-11f1-811a-0242ac110002-jpg-regular_image.jpeg" alt="Envío a laboratorios">
+        <div class="step-num">03</div>
+        <div class="step-title">Envío a laboratorios</div>
+        <p class="step-desc">Enviamos a laboratorios especializados usando métodos seguros. Colaboramos con laboratorios de confianza.</p>
+      </div>
+      <div class="step reveal">
+        <img class="step-img" src="https://cdn.b12.io/client_media/ozkqzIVU/152cb98e-0521-11f1-b337-0242ac110002-jpg-regular_image.jpeg" alt="Interpretación de resultados">
+        <div class="step-num">04</div>
+        <div class="step-title">Interpretación de resultados</div>
+        <p class="step-desc">Usamos inteligencia artificial para desglosar y explicar los resultados de forma comprensible para ti.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CONTACTO ═══════════ -->
+<section class="section" id="contacto">
+  <div class="section-inner">
+    <div class="contact-grid">
+      <div class="reveal">
+        <div class="section-label">Contacto</div>
+        <p class="contact-info-title">Conéctate con nosotros</p>
+        <p class="contact-info-sub">Estamos aquí para ayudarte</p>
+        <div class="cinfo-row">
+          <div class="cinfo-label">Email</div>
+          <div class="cinfo-value">
+            <a href="mailto:info@aivetlab.es">info@aivetlab.es</a>
+          </div>
+        </div>
+        <div class="cinfo-row">
+          <div class="cinfo-label">Ubicación</div>
+          <div class="cinfo-value">
+            <a href="https://www.google.com/maps/place/Almoradí+Valencia+España" target="_blank" rel="noreferrer">
+              Almoradí, Valencia, España
+            </a>
+          </div>
+        </div>
+        <div class="cinfo-row">
+          <div class="cinfo-label">Horario</div>
+          <table class="hours-table">
+            <tr><td>Lunes</td><td>9:00am – 10:00pm</td></tr>
+            <tr><td>Martes</td><td>9:00am – 10:00pm</td></tr>
+            <tr><td>Miércoles</td><td>9:00am – 10:00pm</td></tr>
+            <tr><td>Jueves</td><td>9:00am – 10:00pm</td></tr>
+            <tr><td>Viernes</td><td>9:00am – 10:00pm</td></tr>
+            <tr><td>Sábado</td><td>9:00am – 6:00pm</td></tr>
+            <tr><td>Domingo</td><td>9:00am – 12:00pm</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="form-card">
+          <form onsubmit="event.preventDefault(); alert('Formulario enviado (demo)');">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" required>
+            <br><br>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+            <br><br>
+            <label for="mensaje">Mensaje</label>
+            <textarea id="mensaje" name="mensaje" placeholder="¿En qué podemos ayudarte?" required></textarea>
+            <br>
+            <input type="submit" value="Enviar mensaje">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer id="site-footer">
+  <div class="footer-inner">
+    <a href="#inicio" class="footer-logo">AI VetLab</a>
+    <nav class="footer-nav">
+      <a href="#servicios">Servicios</a>
+      <a href="#proceso">Cómo funciona</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+    <div class="footer-copy">© 2025 AI VetLab · Almoradí, España</div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  /* Scroll: sombra en header */
+  var header = document.getElementById('site-header');
+  window.addEventListener('scroll', function() {
+    header.classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  /* Menú móvil */
+  var toggle = document.getElementById('menu-toggle');
+  var mobileNav = document.getElementById('mobile-nav');
+  toggle.addEventListener('click', function() {
+    mobileNav.classList.toggle('open');
+    var isOpen = mobileNav.classList.contains('open');
+    toggle.setAttribute('aria-expanded', isOpen);
+  });
+
+  /* Cerrar menú al click */
+  var mobileLinks = mobileNav.querySelectorAll('a');
+  mobileLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      mobileNav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  /* Scroll suave */
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('a[href^="#"]');
+    if (!link) return;
+    var target = link.getAttribute('href');
+    if (target === '#') return;
+    var el = document.querySelector(target);
+    if (el) {
+      e.preventDefault();
+      var offset = el.getBoundingClientRect().top + window.pageYOffset - 68;
+      window.scrollTo({ top: offset, behavior: 'smooth' });
+      if (history.pushState) {
+        history.pushState(null, null, target);
+      }
+    }
+  });
+
+  /* Scroll reveal */
+  var reveals = document.querySelectorAll('.reveal');
+  if (reveals.length && 'IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          var el = entry.target;
+          var siblings = el.parentElement.querySelectorAll('.reveal');
+          var idx = Array.prototype.indexOf.call(siblings, el);
+          setTimeout(function() {
+            el.classList.add('in');
+          }, idx * 90);
+          observer.unobserve(el);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    reveals.forEach(function(el) {
+      observer.observe(el);
+    });
+  } else {
+    reveals.forEach(function(el) {
+      el.classList.add('in');
+    });
+  }
+
+  /* Active nav link on scroll */
+  var sections = ['inicio','acerca','servicios','proceso','contacto'];
+  var navLinks = document.querySelectorAll('.main-navigation a');
+
+  window.addEventListener('scroll', function() {
+    var scrollPos = window.scrollY + 80;
+    sections.forEach(function(id) {
+      var section = document.getElementById(id);
+      if (section) {
+        var top = section.offsetTop;
+        var bottom = top + section.offsetHeight;
+        if (scrollPos >= top && scrollPos < bottom) {
+          navLinks.forEach(function(link) { link.classList.remove('current-menu-item'); });
+          navLinks.forEach(function(link) {
+            if (link.getAttribute('href') === '#' + id) {
+              link.classList.add('current-menu-item');
+            }
+          });
+        }
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
